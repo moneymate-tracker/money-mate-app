@@ -24,7 +24,7 @@
 
 ## Overview
 
-Money Mat is a full-stack monorepo application that helps college students manage their monthly finances. It provides a clean dashboard with per-category budget progress, variance reporting, and multi-month trend analysis — all backed by a type-safe REST API and a PostgreSQL database.
+Money Mat is a full-stack monorepo application that helps college students manage their monthly finances. It provides a clean dashboard with per-category budget progress, variance reporting, and multi-month trend analysis — all backed by a type-safe REST API and a MongoDB database.
 
 ---
 
@@ -62,8 +62,8 @@ Money Mat is a full-stack monorepo application that helps college students manag
 |---|---|---|
 | Runtime | **Node.js** | JavaScript server runtime |
 | Framework | **Express 5** | HTTP server and routing |
-| Database | **PostgreSQL** | Relational data storage |
-| ORM | **Drizzle ORM** | Type-safe SQL query builder and schema manager |
+| Database | **MongoDB** | Document-oriented NoSQL data storage |
+| ODM | **Mongoose** | Schema modeling, validation, and query builder for MongoDB |
 | Validation | **Zod v4** | Request body and query param validation |
 | API Contract | **OpenAPI 3.1** | Single source of truth for API shape |
 | Codegen | **Orval** | Generates frontend hooks and Zod schemas from spec |
@@ -83,7 +83,7 @@ workspace/                          # Monorepo root
 │   ├── api-spec/                   # OpenAPI specification (source of truth)
 │   ├── api-client-react/           # Generated React Query hooks
 │   ├── api-zod/                    # Generated Zod validation schemas
-│   └── db/                         # Drizzle ORM client + database schema
+│   └── db/                         # Mongoose client + collection models
 └── scripts/                        # Utility and maintenance scripts
 ```
 
@@ -137,9 +137,11 @@ artifacts/api-server/
 
 lib/db/
 ├── src/
-│   ├── client.ts                   # Drizzle ORM + postgres.js connection
-│   └── schema.ts                   # Table definitions (categories, budgets, expenses)
-├── drizzle.config.ts
+│   ├── client.ts                   # Mongoose connection setup
+│   └── models/
+│       ├── Category.ts             # Category Mongoose model + schema
+│       ├── Budget.ts               # Budget Mongoose model + schema
+│       └── Expense.ts              # Expense Mongoose model + schema
 └── package.json
 
 lib/api-spec/
@@ -152,40 +154,42 @@ lib/api-spec/
 
 ## Database Schema
 
+All collections are managed via Mongoose. Each document automatically receives a MongoDB `_id` (`ObjectId`) as its primary key.
+
 ### `categories`
 
-| Column | Type | Description |
+| Field | Type | Description |
 |---|---|---|
-| `id` | `serial` (PK) | Auto-increment primary key |
-| `name` | `text` | Category name (e.g. `"Food & Dining"`) |
-| `color` | `text` | Hex color code (e.g. `#f97316`) |
-| `icon` | `text` | Icon identifier (e.g. `utensils`) |
-| `created_at` | `timestamptz` | Auto-set on creation |
+| `_id` | `ObjectId` | Auto-generated primary key |
+| `name` | `String` | Category name (e.g. `"Food & Dining"`) |
+| `color` | `String` | Hex color code (e.g. `#f97316`) |
+| `icon` | `String` | Icon identifier (e.g. `utensils`) |
+| `createdAt` | `Date` | Auto-set on creation (via Mongoose timestamps) |
 
 ### `budgets`
 
-| Column | Type | Description |
+| Field | Type | Description |
 |---|---|---|
-| `id` | `serial` (PK) | Auto-increment primary key |
-| `category_id` | `integer` (FK) | References `categories.id` (cascade delete) |
-| `month` | `text` | Month in `YYYY-MM` format |
-| `amount` | `numeric(10,2)` | Budget amount in dollars |
-| `created_at` | `timestamptz` | Auto-set on creation |
+| `_id` | `ObjectId` | Auto-generated primary key |
+| `categoryId` | `ObjectId` (ref) | References `categories._id` |
+| `month` | `String` | Month in `YYYY-MM` format |
+| `amount` | `Number` | Budget amount in dollars |
+| `createdAt` | `Date` | Auto-set on creation (via Mongoose timestamps) |
 
-> **Constraint:** `UNIQUE(category_id, month)` — one budget per category per month.
+> **Index:** `{ categoryId, month }` is a unique compound index — one budget per category per month.
 
 ### `expenses`
 
-| Column | Type | Description |
+| Field | Type | Description |
 |---|---|---|
-| `id` | `serial` (PK) | Auto-increment primary key |
-| `category_id` | `integer` (FK) | References `categories.id` (cascade delete) |
-| `amount` | `numeric(10,2)` | Expense amount in dollars |
-| `description` | `text` | Short description of the expense |
-| `date` | `text` | Date in `YYYY-MM-DD` format |
-| `created_at` | `timestamptz` | Auto-set on creation |
+| `_id` | `ObjectId` | Auto-generated primary key |
+| `categoryId` | `ObjectId` (ref) | References `categories._id` |
+| `amount` | `Number` | Expense amount in dollars |
+| `description` | `String` | Short description of the expense |
+| `date` | `String` | Date in `YYYY-MM-DD` format |
+| `createdAt` | `Date` | Auto-set on creation (via Mongoose timestamps) |
 
-> **Cascade:** Deleting a category removes all related budgets and expenses.
+> **Cascade:** Deleting a category should trigger removal of all related budgets and expenses via Mongoose middleware (`pre('findOneAndDelete')`).
 
 ---
 
@@ -220,10 +224,10 @@ All endpoints are prefixed with `/api`.
 
 **Request body (POST):**
 ```json
-{ "categoryId": 1, "month": "2026-04", "amount": 200 }
+{ "categoryId": "663f1a2b4e1a2b3c4d5e6f7a", "month": "2026-04", "amount": 200 }
 ```
 
-> `POST` is idempotent — if a budget already exists for that category and month, it updates the amount.
+> `POST` is idempotent — if a budget already exists for that category and month, it updates the amount (`findOneAndUpdate` with `upsert: true`).
 
 ---
 
@@ -231,14 +235,14 @@ All endpoints are prefixed with `/api`.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/expenses?month=YYYY-MM&categoryId=1` | List expenses (optional filters) |
+| `GET` | `/expenses?month=YYYY-MM&categoryId=<id>` | List expenses (optional filters) |
 | `POST` | `/expenses` | Log a new expense |
 | `PUT` | `/expenses/:id` | Update an expense |
 | `DELETE` | `/expenses/:id` | Delete an expense |
 
 **Request body (POST):**
 ```json
-{ "categoryId": 1, "amount": 14.50, "description": "Chipotle", "date": "2026-04-01" }
+{ "categoryId": "663f1a2b4e1a2b3c4d5e6f7a", "amount": 14.50, "description": "Chipotle", "date": "2026-04-01" }
 ```
 
 ---
@@ -260,7 +264,7 @@ All endpoints are prefixed with `/api`.
   "totalVariance": 359.26,
   "categories": [
     {
-      "categoryId": 1,
+      "categoryId": "663f1a2b4e1a2b3c4d5e6f7a",
       "categoryName": "Food & Dining",
       "categoryColor": "#f97316",
       "categoryIcon": "utensils",
@@ -283,14 +287,21 @@ Create a `.env` file in the repo root (or set these in your deployment environme
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | Full PostgreSQL connection string |
-| `PGHOST` | Yes | Database host |
-| `PGPORT` | No | Database port (default: `5432`) |
-| `PGUSER` | Yes | Database username |
-| `PGPASSWORD` | Yes | Database password |
-| `PGDATABASE` | Yes | Database name |
+| `MONGODB_URI` | Yes | Full MongoDB connection string (e.g. `mongodb://localhost:27017/moneymat`) |
+| `MONGODB_DB_NAME` | No | Database name override (default: parsed from `MONGODB_URI`) |
 | `PORT` | No | HTTP server port (auto-set per artifact) |
 | `BASE_PATH` | No | URL base path for frontend (auto-set) |
+
+**Example `.env`:**
+```env
+MONGODB_URI=mongodb://localhost:27017/moneymat
+PORT=3000
+```
+
+For MongoDB Atlas (cloud):
+```env
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/moneymat?retryWrites=true&w=majority
+```
 
 ---
 
@@ -300,7 +311,7 @@ Create a `.env` file in the repo root (or set these in your deployment environme
 
 - Node.js >= 20
 - pnpm >= 9
-- PostgreSQL >= 15
+- MongoDB >= 7 (local install or [MongoDB Atlas](https://www.mongodb.com/atlas) free tier)
 
 ### Installation
 
@@ -308,12 +319,11 @@ Create a `.env` file in the repo root (or set these in your deployment environme
 # Install all workspace dependencies
 pnpm install
 
-# Push the database schema to your PostgreSQL instance
-pnpm --filter @workspace/db run push
-
 # Regenerate API client hooks and Zod schemas from the OpenAPI spec
 pnpm --filter @workspace/api-spec run codegen
 ```
+
+> MongoDB is schema-less at the driver level — Mongoose handles schema enforcement at the application level. No migration step is required; collections and indexes are created automatically on first use.
 
 ---
 
@@ -325,9 +335,6 @@ pnpm --filter @workspace/budget-tracker run dev
 
 # Start the API server
 pnpm --filter @workspace/api-server run dev
-
-# Push database schema changes
-pnpm --filter @workspace/db run push
 
 # Regenerate API hooks and Zod schemas from OpenAPI spec
 pnpm --filter @workspace/api-spec run codegen
@@ -341,4 +348,4 @@ pnpm run build
 
 ---
 
-*Built with React 19, Express 5, Drizzle ORM, and PostgreSQL.*
+*Built with React 19, Express 5, Mongoose, and MongoDB.*
