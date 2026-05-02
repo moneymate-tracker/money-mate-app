@@ -283,24 +283,50 @@ All endpoints are prefixed with `/api`.
 
 ## Environment Variables
 
-Create a `.env` file in the repo root (or set these in your deployment environment):
+Create a `.env` file in the repo root (or set these in your deployment environment). Never commit `.env` to version control — add it to `.gitignore`.
 
-| Variable | Required | Description |
-|---|---|---|
-| `MONGODB_URI` | Yes | Full MongoDB connection string (e.g. `mongodb://localhost:27017/moneymat`) |
-| `MONGODB_DB_NAME` | No | Database name override (default: parsed from `MONGODB_URI`) |
-| `PORT` | No | HTTP server port (auto-set per artifact) |
-| `BASE_PATH` | No | URL base path for frontend (auto-set) |
+### Backend (`artifacts/api-server/.env`)
 
-**Example `.env`:**
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MONGODB_URI` | Yes | — | Full MongoDB connection string |
+| `MONGODB_DB_NAME` | No | parsed from URI | Database name override |
+| `PORT` | No | `3000` | HTTP server port |
+| `NODE_ENV` | No | `development` | `development` or `production` |
+| `CORS_ORIGIN` | No | `*` | Allowed CORS origin for the frontend URL |
+
+### Frontend (`artifacts/budget-tracker/.env`)
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `VITE_API_BASE_URL` | No | `/api` | Base URL the frontend uses to reach the API |
+| `BASE_PATH` | No | `/` | URL base path (auto-set in production deployments) |
+
+---
+
+### Example `.env` files
+
+**Local development** (`artifacts/api-server/.env`):
 ```env
 MONGODB_URI=mongodb://localhost:27017/moneymat
+MONGODB_DB_NAME=moneymat
 PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:5173
 ```
 
-For MongoDB Atlas (cloud):
+**Frontend** (`artifacts/budget-tracker/.env`):
+```env
+VITE_API_BASE_URL=http://localhost:3000/api
+```
+
+**MongoDB Atlas (production)** (`artifacts/api-server/.env`):
 ```env
 MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/moneymat?retryWrites=true&w=majority
+MONGODB_DB_NAME=moneymat
+PORT=3000
+NODE_ENV=production
+CORS_ORIGIN=https://your-frontend-domain.com
 ```
 
 ---

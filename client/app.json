@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "MoneyMate",
+    "slug": "money-mate",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.moneymate.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6C63FF"
+      },
+      "package": "com.moneymate.app"
+    },
+    "web": {}
+  }
+}
