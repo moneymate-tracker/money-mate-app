@@ -5,11 +5,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
+import { logout } from '../redux/slices/auth.slice';
 import { USER_PROFILE } from '../data/dummyData';
 import { useTheme } from '../theme/ThemeContext';
 
 const ProfileScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
   const { isDarkMode, toggleDarkMode, colors, background, card, text, textMuted, border } = useTheme();
 
   const [notifications, setNotifications] = useState(true);
@@ -18,7 +21,14 @@ const ProfileScreen = ({ navigation }) => {
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: () => Alert.alert('Logged out!') },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await dispatch(logout());
+          // Navigation will be handled automatically by AppNavigator when auth state changes
+        },
+      },
     ]);
   };
 
@@ -26,9 +36,9 @@ const ProfileScreen = ({ navigation }) => {
     {
       section: 'Account',
       items: [
-        { icon: 'person-outline', label: 'Edit Profile', color: colors.primary[500] },
+        { icon: 'person-outline', label: 'Edit Profile', color: colors.primary[500], screen: 'EditProfile' },
         { icon: 'wallet-outline', label: 'Payment Methods', color: colors.primary[600] },
-        { icon: 'shield-checkmark-outline', label: 'Security', color: colors.primary[400] },
+        { icon: 'shield-checkmark-outline', label: 'Security', color: colors.primary[400], screen: 'Security' },
         { icon: 'notifications-outline', label: 'Notifications', color: colors.primary[500], toggle: true, value: notifications, onChange: setNotifications },
       ],
     },
@@ -36,9 +46,8 @@ const ProfileScreen = ({ navigation }) => {
       section: 'Preferences',
       items: [
         { icon: 'moon-outline', label: 'Dark Mode', color: colors.primary[700], toggle: true, value: isDarkMode, onChange: toggleDarkMode },
-        { icon: 'finger-print-outline', label: 'Biometric Login', color: colors.primary[800], toggle: true, value: biometrics, onChange: setBiometrics },
         { icon: 'language-outline', label: 'Language', color: colors.primary[500], value: 'English' },
-        { icon: 'cash-outline', label: 'Currency', color: colors.primary[600], value: 'USD' },
+        { icon: 'cash-outline', label: 'Currency', color: colors.primary[600], value: 'INR' },
       ],
     },
     {
@@ -46,7 +55,7 @@ const ProfileScreen = ({ navigation }) => {
       items: [
         { icon: 'help-circle-outline', label: 'Help & FAQ', color: colors.primary[500], screen: 'HelpFAQ' },
         { icon: 'mail-outline', label: 'Contact Support', color: colors.primary[600], screen: 'ContactSupport' },
-        { icon: 'star-outline', label: 'Rate App', color: colors.primary[400] },
+        { icon: 'star-outline', label: 'Rate App', color: colors.primary[400], screen: 'RateApp' },
         { icon: 'document-text-outline', label: 'Privacy Policy', color: textMuted, screen: 'PrivacyPolicy' },
       ],
     },
@@ -59,14 +68,24 @@ const ProfileScreen = ({ navigation }) => {
     { label: 'Member Since', value: 'Mar 24', icon: 'calendar-outline', color: colors.primary[700] },
   ];
 
+  const gradientColors = isDarkMode
+    ? [colors.dark[800], colors.dark[900]]
+    : [colors.primary[500], colors.primary[700]];
+
   return (
     <ScrollView
-      style={[styles.container, { paddingTop: insets.top, backgroundColor: background }]}
+      style={[styles.container, { backgroundColor: background }]}
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
+      bounces={false}
     >
       {/* Profile Header */}
-      <LinearGradient colors={[colors.primary[500], colors.primary[700]]} style={styles.profileHeader}>
+      <LinearGradient
+        colors={gradientColors}
+        style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         {/* Avatar */}
         <LinearGradient colors={[colors.primary[300], colors.primary[400]]} style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -141,7 +160,7 @@ const ProfileScreen = ({ navigation }) => {
       ))}
 
       {/* Logout */}
-      <View className='w-full m-auto mt-2 px-20 '>
+      <View style={styles.footerWrap}>
         <TouchableOpacity onPress={handleLogout} activeOpacity={0.85}>
           <View style={[styles.logoutBtn, { backgroundColor: isDarkMode ? colors.dark[700] : colors.primary[50], borderColor: isDarkMode ? colors.dark[600] : colors.primary[100] }]}>
             <Ionicons name="log-out-outline" size={20} color={colors.primary[500]} style={{ marginRight: 8 }} />
@@ -158,17 +177,30 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
 
   profileHeader: {
-    alignItems: 'center', paddingTop: 32, paddingBottom: 40,
+    alignItems: 'center',
+    paddingBottom: 56,
     paddingHorizontal: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   avatar: {
     width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center',
     marginBottom: 14,
     borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   avatarText: { fontSize: 28, fontWeight: '800', color: '#fff' },
   name: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  email: { fontSize: 14, color: 'rgba(255,255,255,0.75)', marginBottom: 12 },
+  email: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 16 },
   memberBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20,
@@ -180,7 +212,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
     paddingHorizontal: 16, gap: 12,
-    marginTop: -24, marginBottom: 8,
+    marginTop: -32, marginBottom: 8,
   },
   statCard: {
     width: '47%', borderRadius: 20, padding: 16,
@@ -190,10 +222,10 @@ const styles = StyleSheet.create({
   },
   statIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 11, textAlign: 'center' },
+  statLabel: { fontSize: 11, textAlign: 'center', fontWeight: '500' },
 
-  menuSection: { paddingHorizontal: 16, marginTop: 20 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#999', letterSpacing: 1.2, marginBottom: 10 },
+  menuSection: { paddingHorizontal: 16, marginTop: 24 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#999', letterSpacing: 1.2, marginBottom: 10, marginLeft: 4 },
   menuCard: {
     borderRadius: 20,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
@@ -205,20 +237,28 @@ const styles = StyleSheet.create({
   },
   menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   menuIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  menuLabel: { fontSize: 14, fontWeight: '500' },
+  menuLabel: { fontSize: 15, fontWeight: '500' },
   menuValueBadge: {
     borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
   },
   menuValueText: { fontSize: 12, fontWeight: '600' },
 
+  footerWrap: {
+    paddingHorizontal: 24,
+    marginTop: 32,
+    alignItems: 'center',
+    width: '100%',
+  },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     borderRadius: 18, paddingVertical: 16,
     borderWidth: 1,
-
+    width: '100%',
+    paddingHorizontal: 40,
   },
-  logoutText: { fontSize: 15, fontWeight: '700' },
-  versionText: { fontSize: 12, marginTop: 16 },
+  logoutText: { fontSize: 16, fontWeight: '700' },
+  versionText: { fontSize: 12, marginTop: 16, fontWeight: '500' },
 });
 
 export default ProfileScreen;
+

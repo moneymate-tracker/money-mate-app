@@ -6,12 +6,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpenseItem from '../components/ExpenseItem';
+import { useTheme } from '../theme/ThemeContext';
 import {
-  EXPENSES, CATEGORIES, getExpensesByMonth,
+  EXPENSES, CATEGORIES,
 } from '../data/dummyData';
 
 const ExpenseListScreen = () => {
   const insets = useSafeAreaInsets();
+  const { colors, isDarkMode, background, card, text, textMuted, border } = useTheme();
+
   const [month, setMonth] = useState(null); // null = all months
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,113 +48,156 @@ const ExpenseListScreen = () => {
   };
 
   const months = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const monthLabels = ['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthLabels = ['All Months', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>All Expenses</Text>
+        <Text style={[styles.pageTitle, { color: text }]}>All Expenses</Text>
         <View style={styles.totalBadge}>
           <Text style={styles.totalText}>${totalFiltered.toFixed(2)}</Text>
         </View>
       </View>
 
       {/* Search */}
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#999" style={{ marginRight: 8 }} />
+      <View style={[styles.searchBox, { backgroundColor: card, borderColor: border, shadowColor: isDarkMode ? '#000' : colors.primary[500] }]}>
+        <Ionicons name="search" size={20} color={textMuted} style={{ marginRight: 8 }} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: text }]}
           placeholder="Search expenses..."
-          placeholderTextColor="#bbb"
+          placeholderTextColor={textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color="#bbb" />
+            <Ionicons name="close-circle" size={20} color={textMuted} />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Month Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterContent}
-      >
-        {months.map((m, i) => (
-          <TouchableOpacity
-            key={i}
-            style={[styles.filterChip, month === m && styles.filterChipActive]}
-            onPress={() => setMonth(m)}
+      {/* Filters Container */}
+      <View style={styles.filtersContainer}>
+        {/* Month Filter */}
+        <View style={styles.filterSection}>
+          <Text style={[styles.filterLabel, { color: textMuted }]}>Month</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContent}
           >
-            <Text style={[styles.filterChipText, month === m && styles.filterChipTextActive]}>
-              {monthLabels[i]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            {months.map((m, i) => {
+              const isActive = month === m;
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[
+                    styles.filterChip,
+                    { backgroundColor: card, borderColor: border },
+                    isActive && { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
+                  ]}
+                  onPress={() => setMonth(m)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[
+                    styles.filterChipText,
+                    { color: textMuted },
+                    isActive && styles.filterChipTextActive
+                  ]}>
+                    {monthLabels[i]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-      {/* Category Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterContent}
-      >
-        <TouchableOpacity
-          style={[styles.catChip, !selectedCategory && styles.catChipActive]}
-          onPress={() => setSelectedCategory(null)}
-        >
-          <Text style={[styles.catChipText, !selectedCategory && styles.catChipTextActive]}>All</Text>
-        </TouchableOpacity>
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[
-              styles.catChip,
-              selectedCategory === cat.id && { backgroundColor: cat.color, borderColor: cat.color },
-            ]}
-            onPress={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)}
+        {/* Category Filter */}
+        <View style={styles.filterSection}>
+          <Text style={[styles.filterLabel, { color: textMuted }]}>Category</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContent}
           >
-            <Ionicons
-              name={cat.icon}
-              size={13}
-              color={selectedCategory === cat.id ? '#fff' : cat.color}
-              style={{ marginRight: 4 }}
-            />
-            <Text
+            <TouchableOpacity
               style={[
-                styles.catChipText,
-                selectedCategory === cat.id && styles.catChipTextActive,
+                styles.catChip,
+                { backgroundColor: card, borderColor: border },
+                !selectedCategory && { backgroundColor: colors.primary[500], borderColor: colors.primary[500] }
               ]}
+              onPress={() => setSelectedCategory(null)}
+              activeOpacity={0.8}
             >
-              {cat.name.split(' ')[0]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text style={[
+                styles.catChipText,
+                { color: textMuted },
+                !selectedCategory && styles.catChipTextActive
+              ]}>
+                All
+              </Text>
+            </TouchableOpacity>
+            
+            {CATEGORIES.map((cat) => {
+              const isActive = selectedCategory === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.catChip,
+                    { backgroundColor: card, borderColor: border },
+                    isActive && { backgroundColor: cat.color, borderColor: cat.color },
+                  ]}
+                  onPress={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[
+                    styles.iconWrapper, 
+                    { backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : cat.color + '15' }
+                  ]}>
+                    <Ionicons
+                      name={cat.icon}
+                      size={14}
+                      color={isActive ? '#fff' : cat.color}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.catChipText,
+                      { color: textMuted },
+                      isActive && styles.catChipTextActive,
+                    ]}
+                  >
+                    {cat.name.split(' ')[0]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
 
       {/* Results Count */}
       <View style={styles.countRow}>
-        <Text style={styles.countText}>{filteredExpenses.length} transactions</Text>
+        <Text style={[styles.countText, { color: textMuted }]}>
+          {filteredExpenses.length} {filteredExpenses.length === 1 ? 'transaction' : 'transactions'} found
+        </Text>
       </View>
 
       {/* Expense List */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
+        contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 100 }]}
       >
         {filteredExpenses.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyTitle}>No expenses found</Text>
-            <Text style={styles.emptySubtitle}>Try adjusting your filters</Text>
+            <Ionicons name="search-outline" size={64} color={border} style={{ marginBottom: 16 }} />
+            <Text style={[styles.emptyTitle, { color: text }]}>No expenses found</Text>
+            <Text style={[styles.emptySubtitle, { color: textMuted }]}>Try adjusting your filters</Text>
           </View>
         ) : (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: card, shadowColor: isDarkMode ? '#000' : colors.primary[500] }]}>
             {filteredExpenses.map((expense) => (
               <ExpenseItem
                 key={expense.id}
@@ -169,62 +215,81 @@ const ExpenseListScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FF' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 12,
+    paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16,
   },
-  pageTitle: { fontSize: 28, fontWeight: '800', color: '#1a1a2e' },
+  pageTitle: { fontSize: 28, fontWeight: '800' },
   totalBadge: {
     backgroundColor: '#FF6B6B', borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 6,
+    paddingHorizontal: 16, paddingVertical: 8,
+    shadowColor: '#FF6B6B', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
-  totalText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  totalText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 
   searchBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16, marginBottom: 8,
-    paddingHorizontal: 14, paddingVertical: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
+    borderRadius: 20, marginHorizontal: 20, marginBottom: 16,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  searchInput: { flex: 1, fontSize: 14, color: '#1a1a2e' },
+  searchInput: { flex: 1, fontSize: 16, fontWeight: '500' },
 
-  filterScroll: { marginBottom: 4 },
-  filterContent: { paddingHorizontal: 16, gap: 8, paddingVertical: 4 },
-  filterChip: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#eee',
+  filtersContainer: {
+    marginBottom: 16,
   },
-  filterChipActive: { backgroundColor: '#6C63FF', borderColor: '#6C63FF' },
-  filterChipText: { fontSize: 12, fontWeight: '600', color: '#777' },
+  filterSection: {
+    marginBottom: 16,
+  },
+  filterLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 24,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  filterContent: { paddingHorizontal: 20, gap: 10 },
+  
+  filterChip: {
+    paddingHorizontal: 18, paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  filterChipText: { fontSize: 14, fontWeight: '600' },
   filterChipTextActive: { color: '#fff' },
 
   catChip: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 20, backgroundColor: '#fff',
-    borderWidth: 1, borderColor: '#eee',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 24,
+    borderWidth: 1,
   },
-  catChipActive: { backgroundColor: '#6C63FF', borderColor: '#6C63FF' },
-  catChipText: { fontSize: 12, fontWeight: '600', color: '#777' },
+  iconWrapper: {
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 8,
+  },
+  catChipText: { fontSize: 14, fontWeight: '600', paddingRight: 4 },
   catChipTextActive: { color: '#fff' },
 
-  countRow: { paddingHorizontal: 16, paddingBottom: 8, paddingTop: 4 },
-  countText: { fontSize: 13, color: '#999' },
+  countRow: { paddingHorizontal: 24, paddingBottom: 12 },
+  countText: { fontSize: 14, fontWeight: '500' },
 
-  listContent: { paddingHorizontal: 16 },
+  listContent: { paddingHorizontal: 20 },
   card: {
-    backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 16, paddingTop: 4,
-    shadowColor: '#6C63FF', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.07, shadowRadius: 12, elevation: 4,
+    borderRadius: 24, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08, shadowRadius: 16, elevation: 5,
   },
 
-  emptyState: { alignItems: 'center', paddingVertical: 64 },
-  emptyEmoji: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#333', marginBottom: 6 },
-  emptySubtitle: { fontSize: 14, color: '#999' },
+  emptyState: { alignItems: 'center', paddingVertical: 80 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
+  emptySubtitle: { fontSize: 15 },
 });
 
 export default ExpenseListScreen;

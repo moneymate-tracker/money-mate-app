@@ -52,7 +52,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.greeting}>Good morning 👋</Text>
             <Text style={styles.userName}>{USER_PROFILE.name}</Text>
           </View>
-          <TouchableOpacity style={styles.avatarBtn}>
+          <TouchableOpacity style={styles.avatarBtn} onPress={() => navigation.navigate('Profile')}>
             <LinearGradient colors={[colors.primary[300], colors.primary[400]]} style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {USER_PROFILE.name.split(' ').map((n) => n[0]).join('')}

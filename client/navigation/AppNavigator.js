@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useDispatch, useSelector } from 'react-redux';
+import { checkAuthStatus } from '../redux/slices/auth.slice';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -16,10 +18,17 @@ import ExpenseListScreen from '../screens/ExpenseListScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import HelpFAQScreen from '../screens/HelpFAQScreen';
 import ContactSupportScreen from '../screens/ContactSupportScreen';
-const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+import WelcomeScreen from '../screens/WelcomeScreen';
+import LoginScreen from '../screens/LoginScreen';
+import SignUpScreen from '../screens/SignUpScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import RateAppScreen from '../screens/RateAppScreen';
+import SecurityScreen from '../screens/SecurityScreen';
 
 import { useTheme } from '../theme/ThemeContext';
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 // ─── Custom FAB Tab Button ─────────────────────────────────────────────────
 const AddTabButton = ({ onPress }) => {
@@ -117,27 +126,72 @@ const TabNavigator = () => {
 };
 
 // ─── Root Stack Navigator ─────────────────────────────────────────────────
-const AppNavigator = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="MainTabs" component={TabNavigator} />
-    <Stack.Screen
-      name="AddExpense"
-      component={AddExpenseScreen}
-      options={{ presentation: 'modal' }}
-    />
-    <Stack.Screen
-      name="ExpenseList"
-      component={ExpenseListScreen}
-    />
-    <Stack.Screen
-      name="Analytics"
-      component={AnalyticsScreen}
-    />
-    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-    <Stack.Screen name="HelpFAQ" component={HelpFAQScreen} />
-    <Stack.Screen name="ContactSupport" component={ContactSupportScreen} />
-  </Stack.Navigator>
-);
+const AppNavigator = () => {
+  const dispatch = useDispatch();
+  const { user, accessToken, isFirstLaunch, loading } = useSelector((state) => state.auth);
+  const { colors } = useTheme();
+
+  // Check authentication status on app startup
+  useEffect(() => {
+    dispatch(checkAuthStatus());
+  }, [dispatch]);
+
+  // Show loading screen while checking auth
+  if (isFirstLaunch === null) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary[500]} />
+      </View>
+    );
+  }
+
+  // Navigation logic based on auth state
+  // First time user → Welcome Screen
+  // Returning user with token → MainTabs
+  // Returning user without token (logged out) → Login Screen
+  const initialRouteName =
+    isFirstLaunch === true ? 'Welcome' :
+    accessToken && user ? 'MainTabs' :
+    'Login';
+
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={initialRouteName}
+    >
+      {/* Welcome & Auth Screens (only when not logged in) */}
+      {!accessToken ? (
+        <>
+          {isFirstLaunch && <Stack.Screen name="Welcome" component={WelcomeScreen} />}
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+        </>
+      ) : null}
+
+      {/* Main App Screens (only when logged in) */}
+      {accessToken && user ? (
+        <>
+          <Stack.Screen name="MainTabs" component={TabNavigator} />
+          <Stack.Screen
+            name="AddExpense"
+            component={AddExpenseScreen}
+            options={{ presentation: 'modal' }}
+          />
+          <Stack.Screen name="ExpenseList" component={ExpenseListScreen} />
+          <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+        </>
+      ) : null}
+
+      {/* Shared Screens (always available) */}
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <Stack.Screen name="HelpFAQ" component={HelpFAQScreen} />
+      <Stack.Screen name="ContactSupport" component={ContactSupportScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="RateApp" component={RateAppScreen} />
+      <Stack.Screen name="Security" component={SecurityScreen} />
+    </Stack.Navigator>
+  );
+};
 
 const styles = StyleSheet.create({
   fabWrapper: {
@@ -157,6 +211,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
