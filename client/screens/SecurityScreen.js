@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Switch, Alert, Platform
+  View, Text, TouchableOpacity, SafeAreaView, StyleSheet, ScrollView, Switch, Platform
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -20,12 +21,15 @@ export default function SecurityScreen() {
     ? [colors.dark[800], colors.dark[900]] 
     : [colors.primary[500], colors.primary[700]];
 
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
+
   const handlePasswordChange = () => {
-    Alert.alert('Change Password', 'A password reset link has been sent to your registered email.');
+    setModal({ visible: true, type: 'info', title: 'Reset Link Sent', message: 'A password reset link has been sent to your registered email address.' });
   };
 
   const handleDeviceManagement = () => {
-    Alert.alert('Active Sessions', 'You are currently logged in on 1 device (This iPhone).');
+    setModal({ visible: true, type: 'info', title: 'Active Sessions', message: 'You are currently logged in on 1 device.' });
   };
 
   const securityOptions = [
@@ -153,6 +157,7 @@ export default function SecurityScreen() {
           ))}
         </View>
       </ScrollView>
+      <AppModal visible={modal.visible} type={modal.type} title={modal.title} message={modal.message} onConfirm={hideModal} />
     </SafeAreaView>
   );
 }

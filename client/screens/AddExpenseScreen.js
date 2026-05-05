@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, Alert, Modal, FlatList,
+  ScrollView, StyleSheet, Modal, FlatList,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,23 +20,28 @@ const AddExpenseScreen = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [catModalVisible, setCatModalVisible] = useState(false);
   const [isIncome, setIsIncome] = useState(false);
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const formatDisplayDate = (date) =>
     `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 
   const handleSave = () => {
     if (!amount || isNaN(parseFloat(amount))) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount.');
+      setModal({ visible: true, type: 'warning', title: 'Invalid Amount', message: 'Please enter a valid numeric amount.' });
       return;
     }
     if (!selectedCategory) {
-      Alert.alert('Select Category', 'Please choose a category for this expense.');
+      setModal({ visible: true, type: 'warning', title: 'Category Required', message: 'Please choose a category for this transaction.' });
       return;
     }
-    // In a real app: dispatch to state/store
-    Alert.alert('Success! ✅', `${isIncome ? 'Income' : 'Expense'} of $${parseFloat(amount).toFixed(2)} saved!`, [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    setModal({
+      visible: true,
+      type: 'success',
+      title: 'Transaction Saved!',
+      message: `${isIncome ? 'Income' : 'Expense'} of $${parseFloat(amount).toFixed(2)} has been recorded.`,
+      onConfirmOverride: () => { hideModal(); navigation.goBack(); },
+    });
   };
 
   const selectedCat = CATEGORIES.find((c) => c.id === selectedCategory);
@@ -180,6 +186,14 @@ const AddExpenseScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      <AppModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirmOverride || hideModal}
+      />
     </View>
   );
 };

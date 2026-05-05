@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert,
+  View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -13,15 +14,21 @@ export default function RateAppScreen() {
 
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState('');
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const handleSubmit = () => {
     if (rating === 0) {
-      Alert.alert('Hold on!', 'Please select a star rating before submitting.');
+      setModal({ visible: true, type: 'warning', title: 'Rating Required', message: 'Please select a star rating before submitting your feedback.' });
       return;
     }
-    Alert.alert('Thank you!', 'Your feedback has been submitted successfully.', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+    setModal({
+      visible: true,
+      type: 'success',
+      title: 'Thank You!',
+      message: 'Your feedback has been submitted successfully. We appreciate your support!',
+      onConfirmOverride: () => { hideModal(); navigation.goBack(); },
+    });
   };
 
   const gradientColors = isDarkMode 
@@ -123,6 +130,7 @@ export default function RateAppScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppModal visible={modal.visible} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirmOverride || hideModal} />
     </SafeAreaView>
   );
 }

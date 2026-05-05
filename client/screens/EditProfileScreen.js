@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert,
+  View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -17,10 +18,10 @@ export default function EditProfileScreen() {
   const [phone, setPhone] = useState('+1 234 567 8900'); // Dummy data for phone
   const [currency, setCurrency] = useState(USER_PROFILE.currency);
 
+  const [modal, setModal] = useState({ visible: false });
+
   const handleSave = () => {
-    Alert.alert('Success', 'Profile updated successfully!', [
-      { text: 'OK', onPress: () => navigation.goBack() }
-    ]);
+    setModal({ visible: true, type: 'success', title: 'Profile Updated!', message: 'Your profile has been saved successfully.' });
   };
 
   const gradientColors = isDarkMode 
@@ -128,6 +129,13 @@ export default function EditProfileScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppModal
+        visible={modal.visible}
+        type="success"
+        title="Profile Updated!"
+        message="Your profile has been saved successfully."
+        onConfirm={() => { setModal({ visible: false }); navigation.goBack(); }}
+      />
     </SafeAreaView>
   );
 }

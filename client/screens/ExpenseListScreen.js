@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert,
+  TextInput,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpenseItem from '../components/ExpenseItem';
@@ -19,6 +20,8 @@ const ExpenseListScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expenses, setExpenses] = useState(EXPENSES);
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   // Filter logic
   const filteredExpenses = expenses.filter((e) => {
@@ -33,18 +36,26 @@ const ExpenseListScreen = () => {
   const totalFiltered = filteredExpenses.reduce((a, e) => a + e.amount, 0);
 
   const handleDelete = (id) => {
-    Alert.alert('Delete Expense', 'Are you sure you want to delete this expense?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => setExpenses((prev) => prev.filter((e) => e.id !== id)),
-      },
-    ]);
+    setModal({
+      visible: true,
+      type: 'confirm',
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: () => { hideModal(); setExpenses((prev) => prev.filter((e) => e.id !== id)); },
+      onCancel: hideModal,
+    });
   };
 
   const handleEdit = (expense) => {
-    Alert.alert('Edit', `Edit "${expense.description}" — $${expense.amount.toFixed(2)}`);
+    setModal({
+      visible: true,
+      type: 'info',
+      title: 'Edit Expense',
+      message: `Editing "${expense.description}" — $${expense.amount.toFixed(2)}`,
+      onConfirm: hideModal,
+    });
   };
 
   const months = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -210,6 +221,17 @@ const ExpenseListScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      <AppModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        confirmText={modal.confirmText}
+        cancelText={modal.cancelText}
+        onConfirm={modal.onConfirm || hideModal}
+        onCancel={modal.onCancel}
+      />
     </View>
   );
 };

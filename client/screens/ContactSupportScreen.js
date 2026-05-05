@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform 
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, Platform
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,18 +15,21 @@ const ContactSupportScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const handleSubmit = () => {
     if (!name || !email || !message) {
-      Alert.alert("Missing Fields", "Please fill out all fields before submitting.");
+      setModal({ visible: true, type: 'warning', title: 'Fields Required', message: 'Please fill out all fields before submitting.' });
       return;
     }
-    
-    Alert.alert(
-      "Message Sent", 
-      "Thank you for contacting us! Our support team will get back to you shortly.",
-      [{ text: "OK", onPress: () => navigation.goBack() }]
-    );
+    setModal({
+      visible: true,
+      type: 'success',
+      title: 'Message Sent!',
+      message: 'Thank you for contacting us! Our support team will get back to you shortly.',
+      onConfirmOverride: () => { hideModal(); navigation.goBack(); },
+    });
   };
 
   return (
@@ -100,6 +104,7 @@ const ContactSupportScreen = ({ navigation }) => {
 
         </ScrollView>
       </View>
+      <AppModal visible={modal.visible} type={modal.type} title={modal.title} message={modal.message} onConfirm={modal.onConfirmOverride || hideModal} />
     </KeyboardAvoidingView>
   );
 };

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,19 +18,24 @@ const ProfileScreen = ({ navigation }) => {
 
   const [notifications, setNotifications] = useState(true);
   const [biometrics, setBiometrics] = useState(false);
+  const [modal, setModal] = useState({ visible: false });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          await dispatch(logout());
-          // Navigation will be handled automatically by AppNavigator when auth state changes
-        },
+    setModal({
+      visible: true,
+      type: 'confirm',
+      title: 'Logout',
+      message: 'Are you sure you want to logout from MoneyMate?',
+      confirmText: 'Logout',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        hideModal();
+        await dispatch(logout());
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
       },
-    ]);
+      onCancel: hideModal,
+    });
   };
 
   const menuItems = [
@@ -169,6 +175,17 @@ const ProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
         <Text style={[styles.versionText, { color: textMuted }]}>MoneyMate v1.0.0</Text>
       </View>
+
+      <AppModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        confirmText={modal.confirmText}
+        cancelText={modal.cancelText}
+        onConfirm={modal.onConfirm}
+        onCancel={modal.onCancel}
+      />
     </ScrollView>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { signup } from '../redux/slices/auth.slice';
 import { useTheme } from '../theme/ThemeContext';
+import AppModal from '../components/AppModal';
 
 export default function SignUpScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -14,18 +15,20 @@ export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [modal, setModal] = useState({ visible: false });
+  const showModal = (cfg) => setModal({ ...cfg, visible: true });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showModal({ type: 'warning', title: 'Fields Required', message: 'Please fill in all fields to create your account.' });
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters long');
+      showModal({ type: 'warning', title: 'Weak Password', message: 'Password must be at least 8 characters long.' });
       return;
     }
-
 
     try {
       const resultAction = await dispatch(signup({
@@ -35,21 +38,18 @@ export default function SignUpScreen({ navigation }) {
         password
       }));
 
-      console.log('Signup result:', resultAction);
-
       if (signup.fulfilled.match(resultAction)) {
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please check your email for verification.',
-          [
-            { text: 'OK', onPress: () => navigation.navigate('Login') }
-          ]
-        );
+        showModal({
+          type: 'success',
+          title: 'Account Created!',
+          message: 'Your account has been created successfully. Please check your email for verification.',
+          onConfirmOverride: () => { hideModal(); navigation.navigate('Login'); },
+        });
       } else if (signup.rejected.match(resultAction)) {
-        Alert.alert('Sign Up Failed', resultAction.payload || 'Failed to create account');
+        showModal({ type: 'error', title: 'Sign Up Failed', message: resultAction.payload || 'Failed to create account. Please try again.' });
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showModal({ type: 'error', title: 'Something Went Wrong', message: 'Please check your connection and try again.' });
     }
   };
 
@@ -137,6 +137,13 @@ export default function SignUpScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirmOverride || hideModal}
+      />
     </SafeAreaView>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal, TextInput,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, TextInput,
 } from 'react-native';
+import AppModal from '../components/AppModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +24,8 @@ const BudgetScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [appModal, setAppModal] = useState({ visible: false });
+  const hideAppModal = () => setAppModal(m => ({ ...m, visible: false }));
 
   const handlePrev = () => {
     if (month === 1) { setMonth(12); setYear((y) => y - 1); }
@@ -43,13 +46,13 @@ const BudgetScreen = () => {
 
   const handleSaveBudget = () => {
     if (!budgetInput || isNaN(parseFloat(budgetInput))) {
-      Alert.alert('Invalid Amount', 'Please enter a valid budget amount.');
+      setAppModal({ visible: true, type: 'warning', title: 'Invalid Amount', message: 'Please enter a valid budget amount.' });
       return;
     }
-    Alert.alert('Budget Updated ✅', `Budget set to $${parseFloat(budgetInput).toFixed(2)}`);
     setModalVisible(false);
     setBudgetInput('');
     setSelectedCategory(null);
+    setAppModal({ visible: true, type: 'success', title: 'Budget Updated!', message: `Budget has been set to $${parseFloat(budgetInput).toFixed(2)}.` });
   };
 
   return (
@@ -216,6 +219,14 @@ const BudgetScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <AppModal
+        visible={appModal.visible}
+        type={appModal.type}
+        title={appModal.title}
+        message={appModal.message}
+        onConfirm={hideAppModal}
+      />
     </View>
   );
 };

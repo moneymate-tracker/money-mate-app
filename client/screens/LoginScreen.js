@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../redux/slices/auth.slice';
 import { useTheme } from '../theme/ThemeContext';
+import AppModal from '../components/AppModal';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -14,10 +15,13 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [modal, setModal] = useState({ visible: false });
+  const showModal = (cfg) => setModal({ ...cfg, visible: true });
+  const hideModal = () => setModal(m => ({ ...m, visible: false }));
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showModal({ type: 'warning', title: 'Fields Required', message: 'Please fill in your email and password to continue.' });
       return;
     }
 
@@ -25,12 +29,12 @@ export default function LoginScreen() {
       const resultAction = await dispatch(login({ email: email.trim(), password }));
 
       if (login.fulfilled.match(resultAction)) {
-        // Navigation will be handled automatically by AppNavigator when auth state changes
+        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
       } else if (login.rejected.match(resultAction)) {
-        Alert.alert('Login Failed', resultAction.payload || 'Invalid credentials');
+        showModal({ type: 'error', title: 'Login Failed', message: resultAction.payload || 'Invalid credentials. Please try again.' });
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showModal({ type: 'error', title: 'Something Went Wrong', message: 'Please check your connection and try again.' });
     }
   };
 
@@ -127,6 +131,13 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={hideModal}
+      />
     </SafeAreaView>
   );
 }

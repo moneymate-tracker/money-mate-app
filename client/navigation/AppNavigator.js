@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,7 +18,7 @@ import ExpenseListScreen from '../screens/ExpenseListScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import HelpFAQScreen from '../screens/HelpFAQScreen';
 import ContactSupportScreen from '../screens/ContactSupportScreen';
-import WelcomeScreen from '../screens/WelcomeScreen';
+import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -128,61 +128,34 @@ const TabNavigator = () => {
 // ─── Root Stack Navigator ─────────────────────────────────────────────────
 const AppNavigator = () => {
   const dispatch = useDispatch();
-  const { user, accessToken, isFirstLaunch, loading } = useSelector((state) => state.auth);
-  const { colors } = useTheme();
 
-  // Check authentication status on app startup
   useEffect(() => {
     dispatch(checkAuthStatus());
   }, [dispatch]);
 
-  // Show loading screen while checking auth
-  if (isFirstLaunch === null) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary[500]} />
-      </View>
-    );
-  }
-
-  // Navigation logic based on auth state
-  // First time user → Welcome Screen
-  // Returning user with token → MainTabs
-  // Returning user without token (logged out) → Login Screen
-  const initialRouteName =
-    isFirstLaunch === true ? 'Welcome' :
-    accessToken && user ? 'MainTabs' :
-    'Login';
-
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName={initialRouteName}
+      initialRouteName="Splash"
     >
-      {/* Welcome & Auth Screens (only when not logged in) */}
-      {!accessToken ? (
-        <>
-          {isFirstLaunch && <Stack.Screen name="Welcome" component={WelcomeScreen} />}
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-        </>
-      ) : null}
+      {/* Splash — always first, navigates away after auth check */}
+      <Stack.Screen name="Splash" component={SplashScreen} />
 
-      {/* Main App Screens (only when logged in) */}
-      {accessToken && user ? (
-        <>
-          <Stack.Screen name="MainTabs" component={TabNavigator} />
-          <Stack.Screen
-            name="AddExpense"
-            component={AddExpenseScreen}
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen name="ExpenseList" component={ExpenseListScreen} />
-          <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-        </>
-      ) : null}
+      {/* Auth */}
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
 
-      {/* Shared Screens (always available) */}
+      {/* Main app */}
+      <Stack.Screen name="MainTabs" component={TabNavigator} />
+      <Stack.Screen
+        name="AddExpense"
+        component={AddExpenseScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <Stack.Screen name="ExpenseList" component={ExpenseListScreen} />
+      <Stack.Screen name="Analytics" component={AnalyticsScreen} />
+
+      {/* Shared */}
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="HelpFAQ" component={HelpFAQScreen} />
       <Stack.Screen name="ContactSupport" component={ContactSupportScreen} />
@@ -212,11 +185,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
 });
 
 export default AppNavigator;
